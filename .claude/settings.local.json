@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod:*)",
+      "Bash(bash ops/verify_compliance.sh:*)",
+      "Bash(where:*)",
+      "Bash(Get-Command docker -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object -ExpandProperty Source)",
+      "Bash(echo:*)",
+      "Bash(tasklist.exe:*)",
+      "Bash(\"/c/Program Files/Docker/Docker/resources/bin/docker.exe\" --version)",
+      "Bash(\"/c/Program Files/Docker/Docker/resources/bin/docker.exe\" compose version)",
+      "Bash(export PATH=\"$PATH:/c/Program Files/Docker/Docker/resources/bin\")",
+      "Bash(docker:*)",
+      "Bash(C:UsersnthinAppDataLocalProgramsPythonPython311python.exe -m pip uninstall -y jose)",
+      "Bash(tree:*)",
+      "Bash(python -m py_compile:*)",
+      "Bash(python:*)",
+      "Bash(curl:*)",
+      "Bash(pip show:*)",
+      "Bash(pip install:*)",
+      "Bash(playwright install:*)",
+      "Bash(ls:*)",
+      "Bash(dir:*)",
+      "Bash(timeout:*)",
+      "Bash(ping:*)",
+      "Bash(findstr:*)",
+      "Bash(openssl x509:*)",
+      "Bash(grep:*)"
+    ]
+  }
+}

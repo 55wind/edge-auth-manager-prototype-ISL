@@ -1,0 +1,59 @@
+# LattePanda #1 Agent Node용 Docker Compose
+# latte-001 (온도 센서)를 실행합니다.
+#
+# 사용법:
+#   export SERVER_IP=<PC의 IP주소>
+#   docker compose -f docker-compose.agent.yml up --build
+#
+# 또는:
+#   ./scripts/start-agent-auto.sh  # IP 입력 프롬프트
+
+services:
+  agent-latte-001:
+    build:
+      context: .
+      dockerfile: services/agent/Dockerfile
+    container_name: edge_agent_latte_001
+    command: >
+      python -m agent.run
+      --device-id latte-001
+      --site factory-demo
+      --group sensors
+    environment:
+      MANAGER_BASE_URL: "https://${SERVER_IP:-192.168.1.10}:8443"
+      AMQP_URL: "amqps://isl:${RABBITMQ_EDGE_PASSWORD:-wjdqhqhghdusrntlf1!}@${SERVER_IP:-192.168.1.10}:5671/"
+      CERTS_DIR: "/certs"
+      AGENT_BUFFER_DIR: "/buffer"
+      AGENT_SENSOR_TYPE: "temperature"
+    volumes:
+      - ./certs:/certs:ro
+      - ./data/agent_buffer_001:/buffer
+    extra_hosts:
+      - "manager.local:${SERVER_IP:-192.168.1.10}"
+      - "rabbitmq.local:${SERVER_IP:-192.168.1.10}"
+    restart: unless-stopped
+
+  # 두 번째 Agent (선택적으로 사용)
+  # agent-latte-002:
+  #   build:
+  #     context: .
+  #     dockerfile: services/agent/Dockerfile
+  #   container_name: edge_agent_latte_002
+  #   command: >
+  #     python -m agent.run
+  #     --device-id latte-002
+  #     --site factory-demo
+  #     --group actuators
+  #   environment:
+  #     MANAGER_BASE_URL: "https://${SERVER_IP:-192.168.1.10}:8443"
+  #     AMQP_URL: "amqps://isl:${RABBITMQ_EDGE_PASSWORD:-wjdqhqhghdusrntlf1!}@${SERVER_IP:-192.168.1.10}:5671/"
+  #     CERTS_DIR: "/certs"
+  #     AGENT_BUFFER_DIR: "/buffer"
+  #     AGENT_SENSOR_TYPE: "humidity"
+  #   volumes:
+  #     - ./certs:/certs:ro
+  #     - ./data/agent_buffer_002:/buffer
+  #   extra_hosts:
+  #     - "manager.local:${SERVER_IP:-192.168.1.10}"
+  #     - "rabbitmq.local:${SERVER_IP:-192.168.1.10}"
+  #   restart: unless-stopped

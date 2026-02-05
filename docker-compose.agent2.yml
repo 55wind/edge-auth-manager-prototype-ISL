@@ -1,0 +1,30 @@
+# LattePanda #2 Agent Node용 Docker Compose
+# latte-002 (습도 센서)를 실행합니다.
+#
+# 사용법:
+#   SERVER_IP=192.168.0.100 docker compose -f docker-compose.agent2.yml up --build
+
+services:
+  agent-latte-002:
+    build:
+      context: .
+      dockerfile: services/agent/Dockerfile
+    container_name: edge_agent_latte_002
+    command: >
+      python -m agent.run
+      --device-id latte-002
+      --site factory-demo
+      --group sensors
+    environment:
+      MANAGER_BASE_URL: "https://${SERVER_IP}:8443"
+      AMQP_URL: "amqps://isl:${RABBITMQ_EDGE_PASSWORD:-wjdqhqhghdusrntlf1!}@${SERVER_IP}:5671/"
+      CERTS_DIR: "/certs"
+      AGENT_BUFFER_DIR: "/buffer"
+      AGENT_SENSOR_TYPE: "humidity"
+    volumes:
+      - ./certs:/certs:ro
+      - ./data/agent_buffer_002:/buffer
+    extra_hosts:
+      - "manager.local:${SERVER_IP}"
+      - "rabbitmq.local:${SERVER_IP}"
+    restart: unless-stopped

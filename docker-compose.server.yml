@@ -1,0 +1,80 @@
+# PC (Server Node)용 Docker Compose
+# Manager, Dashboard, RabbitMQ를 실행합니다.
+# LattePanda Agent들이 접속할 수 있도록 0.0.0.0으로 바인딩됩니다.
+#
+# 사용법:
+#   docker compose -f docker-compose.server.yml up --build -d
+#   ./scripts/show-ip.sh  # IP 확인 후 LattePanda에 공유
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq_tls
+    ports:
+      - "0.0.0.0:5671:5671"     # TLS AMQP - 외부 Agent 접속용
+      - "0.0.0.0:15672:15672"   # Management UI
+    volumes:
+      - ./ops/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./ops/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+      - ./certs/rabbitmq:/etc/rabbitmq/certs:ro
+    environment:
+      RABBITMQ_EDGE_PASSWORD: "${RABBITMQ_EDGE_PASSWORD:-wjdqhqhghdusrntlf1!}"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - edge-network
+
+  manager:
+    build:
+      context: .
+      dockerfile: services/manager/Dockerfile
+    container_name: auth_manager
+    ports:
+      - "0.0.0.0:8443:8443"   # 외부 Agent 접속용
+    environment:
+      DB_URL: "sqlite+aiosqlite:////data/manager.db"
+      JWT_ISSUER: "edge-auth-manager"
+      JWT_AUDIENCE: "edge-agents"
+      JWT_TTL_SECONDS: "900"
+      CERTS_DIR: "/certs"
+      AUTO_APPROVE: "false"   # 시연용: 수동 승인
+    volumes:
+      - ./data:/data
+      - ./certs:/certs:ro
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('https://localhost:8443/healthz', context=__import__('ssl').create_default_context())"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - edge-network
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: services/dashboard/Dockerfile
+    container_name: auth_dashboard
+    ports:
+      - "0.0.0.0:8501:8501"   # 외부 브라우저 접속용
+    environment:
+      MANAGER_BASE_URL: "https://manager:8443"
+      CERTS_DIR: "/certs"
+      RABBITMQ_HOST: "rabbitmq"
+      RABBITMQ_EDGE_PASSWORD: "${RABBITMQ_EDGE_PASSWORD:-wjdqhqhghdusrntlf1!}"
+    volumes:
+      - ./certs:/certs:ro
+    depends_on:
+      - manager
+    networks:
+      - edge-network
+
+networks:
+  edge-network:
+    driver: bridge

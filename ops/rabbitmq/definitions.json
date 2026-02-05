@@ -1,0 +1,30 @@
+{
+  "users": [
+    {
+      "name": "isl",
+      "password": "wjdqhqhghdusrntlf1!",
+      "tags": "administrator"
+    }
+  ],
+  "vhosts": [
+    {"name": "/"}
+  ],
+  "permissions": [
+    {
+      "user": "isl",
+      "vhost": "/",
+      "configure": "^agent\\.metadata$",
+      "write": "^agent\\.metadata$",
+      "read": "^agent\\.metadata$"
+    }
+  ],
+  "queues": [
+    {
+      "name": "agent.metadata",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ]
+}

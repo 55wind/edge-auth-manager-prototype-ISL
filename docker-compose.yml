@@ -1,0 +1,127 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq_tls
+    ports:
+      - "5671:5671"     # TLS AMQP
+      - "15672:15672"   # management UI
+    volumes:
+      - ./ops/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./ops/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+      - ./certs/rabbitmq:/etc/rabbitmq/certs:ro
+    environment:
+      RABBITMQ_EDGE_PASSWORD: "${RABBITMQ_EDGE_PASSWORD:-wjdqhqhghdusrntlf1!}"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - internal
+      - external  # management UI (15672) needs host access
+
+  manager:
+    build:
+      context: .
+      dockerfile: services/manager/Dockerfile
+    container_name: auth_manager
+    ports:
+      - "8443:8443"
+    environment:
+      DB_URL: "sqlite+aiosqlite:////data/manager.db"
+      JWT_ISSUER: "edge-auth-manager"
+      JWT_AUDIENCE: "edge-agents"
+      JWT_TTL_SECONDS: "900"
+      CERTS_DIR: "/certs"
+      AUTO_APPROVE: "true"
+    volumes:
+      - ./data:/data
+      - ./certs:/certs:ro
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('https://localhost:8443/healthz', context=__import__('ssl').create_default_context())"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - internal
+      - external
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: services/dashboard/Dockerfile
+    container_name: auth_dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      MANAGER_BASE_URL: "https://manager:8443"
+      CERTS_DIR: "/certs"
+      RABBITMQ_HOST: "rabbitmq"
+      RABBITMQ_EDGE_PASSWORD: "${RABBITMQ_EDGE_PASSWORD:-wjdqhqhghdusrntlf1!}"
+    volumes:
+      - ./certs:/certs:ro
+    depends_on:
+      - manager
+    networks:
+      - external
+
+  agent-001:
+    build:
+      context: .
+      dockerfile: services/agent/Dockerfile
+    container_name: edge_agent_001
+    command: ["python", "-m", "agent.run", "--device-id", "agent-001", "--site", "factory-A", "--group", "sensors"]
+    environment:
+      MANAGER_BASE_URL: "https://manager:8443"
+      AMQP_URL: "amqps://isl:${RABBITMQ_EDGE_PASSWORD:-wjdqhqhghdusrntlf1!}@rabbitmq:5671/"
+      CERTS_DIR: "/certs"
+      AGENT_BUFFER_DIR: "/buffer"
+      AGENT_SENSOR_TYPE: "temperature"
+    volumes:
+      - ./certs:/certs:ro
+      - ./data/agent_buffer_001:/buffer
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      manager:
+        condition: service_started
+    networks:
+      - internal
+
+  agent-002:
+    build:
+      context: .
+      dockerfile: services/agent/Dockerfile
+    container_name: edge_agent_002
+    command: ["python", "-m", "agent.run", "--device-id", "agent-002", "--site", "factory-B", "--group", "sensors"]
+    environment:
+      MANAGER_BASE_URL: "https://manager:8443"
+      AMQP_URL: "amqps://isl:${RABBITMQ_EDGE_PASSWORD:-wjdqhqhghdusrntlf1!}@rabbitmq:5671/"
+      CERTS_DIR: "/certs"
+      AGENT_BUFFER_DIR: "/buffer"
+      AGENT_SENSOR_TYPE: "humidity"
+    volumes:
+      - ./certs:/certs:ro
+      - ./data/agent_buffer_002:/buffer
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      manager:
+        condition: service_started
+    networks:
+      - internal
+
+networks:
+  internal:
+    # Internal network: agents <-> RabbitMQ <-> manager
+    # Agents and RabbitMQ communicate here (on-device <-> gateway segment)
+    driver: bridge
+    internal: true  # No external internet access
+  external:
+    # External network: dashboard <-> manager (gateway <-> control plane segment)
+    # Dashboard accesses manager API over mTLS
+    driver: bridge
