@@ -17,11 +17,12 @@ def _mtls_client(base_url: str, certs_dir: str) -> httpx.Client:
     crt = os.path.join(certs_dir, "agent", "client.crt")
     key = os.path.join(certs_dir, "agent", "client.key")
 
-    # Verify server with CA; present client cert for mTLS.
+    # Build SSL context for mTLS: verify server with CA, present client cert.
+    ctx = ssl.create_default_context(cafile=ca)
+    ctx.load_cert_chain(crt, key)
     return httpx.Client(
         base_url=base_url,
-        verify=ca,
-        cert=(crt, key),
+        verify=ctx,
         timeout=10.0,
     )
 

@@ -33,7 +33,7 @@ services:
       JWT_AUDIENCE: "edge-agents"
       JWT_TTL_SECONDS: "900"
       CERTS_DIR: "/certs"
-      AUTO_APPROVE: "true"
+      AUTO_APPROVE: "false"
     volumes:
       - ./data:/data
       - ./certs:/certs:ro

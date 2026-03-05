@@ -26,7 +26,19 @@
       "Bash(ping:*)",
       "Bash(findstr:*)",
       "Bash(openssl x509:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(for f in certs/ca.crt certs/manager/server.crt certs/admin/client.crt certs/agent/client.crt certs/rabbitmq/server.crt)",
+      "Bash(do echo \"=== $f ===\")",
+      "Bash(done)",
+      "Bash(wc:*)",
+      "Bash(ffmpeg:*)",
+      "Bash(FFMPEG=\"C:/Users/nthin/AppData/Local/Programs/Python/Python310/lib/site-packages/imageio_ffmpeg/binaries/ffmpeg-win-x86_64-v7.1.exe\":*)",
+      "Bash(\"$FFMPEG\" -i /c/Users/nthin/Downloads/edge-auth-manager-prototype/docs/demo_full_process.webm -c:v libx264 -preset medium -crf 23 -pix_fmt yuv420p -movflags +faststart /c/Users/nthin/Downloads/edge-auth-manager-prototype/docs/demo_full_process.mp4)",
+      "Bash(\"$FFMPEG\" -i docs/demo_full_process_v2.mp4 -vf \"select=''eq\\(n\\\\,50\\)+eq\\(n\\\\,250\\)+eq\\(n\\\\,550\\)+eq\\(n\\\\,850\\)+eq\\(n\\\\,1150\\)+eq\\(n\\\\,1450\\)+eq\\(n\\\\,1700\\)''\" -vsync vfr docs/frame_%02d.png)",
+      "Bash(sqlite3:*)",
+      "Bash(cmd.exe /c \"where ffmpeg\")",
+      "Bash(conda list:*)",
+      "Bash(\"$FFMPEG\" -y -i docs/demo_full_process_v3.mp4 -vf \"subtitles=docs/subtitles_v3.srt:force_style=''FontName=Malgun Gothic,FontSize=13,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=3,BackColour=&H80000000,Outline=1,Shadow=0,MarginV=55''\" -c:v libx264 -preset medium -crf 23 -c:a copy docs/demo_full_process_v3_subtitled.mp4)"
     ]
   }
 }
